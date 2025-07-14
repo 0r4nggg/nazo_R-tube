@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Re:R-Tube</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Re:R-Tube</h1>
+  </header>
+
+  <main>
+    <section class="upload-section">
+      <h2>動画をアップロード</h2>
+      <input type="file" id="videoFile" accept="video/*" />
+      <input type="text" id="titleInput" placeholder="タイトルを入力" />
+      <textarea id="descInput" placeholder="説明を入力"></textarea>
+      <button id="submitBtn">動画を投稿</button>
+    </section>
+
+    <section class="video-list">
+      <h2>公開された動画</h2>
+      <div class="grid" id="videoGrid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 謎の会社（仮）</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
