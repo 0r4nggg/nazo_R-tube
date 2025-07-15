@@ -87,12 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const userData = JSON.parse(localStorage.getItem('user'));
 
   if (channelBtn) {
-    if (userData) {
-      channelBtn.textContent = 'チャンネル設定';
-      channelBtn.onclick = () => window.location.href = 'channel.html';
+    if (loggedIn) {
+      document.getElementById('channelLink').textContent = 'チャンネル設定';
     } else {
-      channelBtn.textContent = 'ログイン / アカウント作成';
-      channelBtn.onclick = () => {
+      document.getElementById('channelLink').textContent = 'ログイン / アカウント作成';
+}      channelBtn.onclick = () => {
         const name = prompt('ユーザー名を入力してください');
         const channel = prompt('チャンネル名を入力してください');
         const icon = prompt('アイコン画像のURLを入力（任意）');
