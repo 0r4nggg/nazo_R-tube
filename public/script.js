@@ -81,3 +81,40 @@ uploadForm.onsubmit = async e => {
 };
 
 loadVideos();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const channelBtn = document.getElementById('channelBtn');
+  const userData = JSON.parse(localStorage.getItem('user'));
+
+  if (channelBtn) {
+    if (userData) {
+      channelBtn.textContent = 'チャンネル設定';
+      channelBtn.onclick = () => window.location.href = 'channel.html';
+    } else {
+      channelBtn.textContent = 'ログイン / アカウント作成';
+      channelBtn.onclick = () => {
+        const name = prompt('ユーザー名を入力してください');
+        const channel = prompt('チャンネル名を入力してください');
+        const icon = prompt('アイコン画像のURLを入力（任意）');
+
+        if (!name || !channel) return alert('すべて入力してください');
+
+        fetch('/api/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: name,
+            channelName: channel,
+            iconUrl: icon
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) return alert(data.error);
+          localStorage.setItem('user', JSON.stringify(data));
+          location.reload();
+        });
+      };
+    }
+  }
+});
