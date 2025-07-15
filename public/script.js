@@ -1,4 +1,6 @@
 // script.js
+console.log('script.js 読み込み完了');
+
 const userId = localStorage.getItem('userId');
 const videoGrid = document.getElementById('videoGrid');
 const uploadForm = document.getElementById('uploadForm');
