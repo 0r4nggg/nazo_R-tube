@@ -86,16 +86,24 @@ loadVideos();
 
 document.addEventListener('DOMContentLoaded', () => {
   const authLink = document.getElementById('authLink');
-  const userDataRaw = localStorage.getItem('user');
-  let userData = null;
 
+  // ローカルストレージからユーザーデータを取得
+  const userDataRaw = localStorage.getItem('user');
+
+  // ← ここに追加！
+  console.log('localStorage user:', userDataRaw);
+
+  let userData = null;
   try {
     userData = JSON.parse(userDataRaw);
   } catch {
     userData = null;
   }
 
-  const loggedIn = !!userData;
+  console.log('parsed userData:', userData);
+
+  const loggedIn = !!userData && !!userData._id;
+  console.log('loggedIn:', loggedIn);
 
   if (authLink) {
     if (loggedIn) {
@@ -111,6 +119,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
-
-
-
