@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>アカウント作成 - Re:R-tube</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1><a href="index.html">Re:R-tube</a></h1>
+  </header>
+
+  <main>
+    <h2>アカウント作成</h2>
+    <form id="createForm">
+      <label for="username">ユーザー名（必須）</label><br />
+      <input type="text" id="username" name="username" required /><br />
+
+      <label for="channelName">チャンネル名（必須）</label><br />
+      <input type="text" id="channelName" name="channelName" required /><br />
+
+      <label for="iconUrl">アイコン画像のURL（任意）</label><br />
+      <input type="url" id="iconUrl" name="iconUrl" /><br />
+
+      <button type="submit">作成</button>
+    </form>
+    <p id="errorMsg" style="color: red;"></p>
+  </main>
+
+  <script src="create.js"></script>
+</body>
+</html>

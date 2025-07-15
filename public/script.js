@@ -83,26 +83,41 @@ uploadForm.onsubmit = async e => {
 loadVideos();
 
 document.addEventListener('DOMContentLoaded', () => {
-  const channelLink = document.getElementById('channelLink'); // ボタンIDはchannelLink
-  const userData = JSON.parse(localStorage.getItem('user'));
+  const channelLink = document.getElementById('channelLink');
+  const userDataRaw = localStorage.getItem('user');
+  let userData = null;
+
+  console.log('localStorage user:', userDataRaw);
+
+  try {
+    userData = JSON.parse(userDataRaw);
+  } catch {
+    userData = null;
+  }
+
+  console.log('parsed userData:', userData);
+
   const loggedIn = !!userData;
+
+  console.log('loggedIn:', loggedIn);
 
   if (channelLink) {
     if (loggedIn) {
       channelLink.textContent = 'チャンネル設定';
       channelLink.onclick = () => {
-        // チャンネル設定ページへ
         window.location.href = 'channel.html';
       };
     } else {
       channelLink.textContent = 'ログイン / アカウント作成';
       channelLink.onclick = () => {
-        // ユーザー作成ダイアログなど
         const name = prompt('ユーザー名を入力してください');
         const channel = prompt('チャンネル名を入力してください');
         const icon = prompt('アイコン画像のURLを入力（任意）');
 
-        if (!name || !channel) return alert('ユーザー名とチャンネル名は必須です');
+        if (!name || !channel) {
+          alert('ユーザー名とチャンネル名は必須です');
+          return;
+        }
 
         fetch('/api/create-user', {
           method: 'POST',
@@ -113,13 +128,16 @@ document.addEventListener('DOMContentLoaded', () => {
             iconUrl: icon
           })
         })
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) return alert(data.error);
-          localStorage.setItem('user', JSON.stringify(data));
-          location.reload();
-        })
-        .catch(() => alert('ユーザー作成に失敗しました'));
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              alert(data.error);
+              return;
+            }
+            localStorage.setItem('user', JSON.stringify(data));
+            location.reload();
+          })
+          .catch(() => alert('ユーザー作成に失敗しました'));
       };
     }
   }
