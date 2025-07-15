@@ -83,11 +83,9 @@ uploadForm.onsubmit = async e => {
 loadVideos();
 
 document.addEventListener('DOMContentLoaded', () => {
-  const channelLink = document.getElementById('channelLink');
+  const authLink = document.getElementById('authLink');
   const userDataRaw = localStorage.getItem('user');
   let userData = null;
-
-  console.log('localStorage user:', userDataRaw);
 
   try {
     userData = JSON.parse(userDataRaw);
@@ -95,51 +93,22 @@ document.addEventListener('DOMContentLoaded', () => {
     userData = null;
   }
 
-  console.log('parsed userData:', userData);
-
   const loggedIn = !!userData;
 
-  console.log('loggedIn:', loggedIn);
-
-  if (channelLink) {
+  if (authLink) {
     if (loggedIn) {
-      channelLink.textContent = 'チャンネル設定';
-      channelLink.onclick = () => {
+      authLink.textContent = 'チャンネル設定';
+      authLink.onclick = () => {
         window.location.href = 'channel.html';
       };
     } else {
-      channelLink.textContent = 'ログイン / アカウント作成';
-      channelLink.onclick = () => {
-        const name = prompt('ユーザー名を入力してください');
-        const channel = prompt('チャンネル名を入力してください');
-        const icon = prompt('アイコン画像のURLを入力（任意）');
-
-        if (!name || !channel) {
-          alert('ユーザー名とチャンネル名は必須です');
-          return;
-        }
-
-        fetch('/api/create-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: name,
-            channelName: channel,
-            iconUrl: icon
-          })
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.error) {
-              alert(data.error);
-              return;
-            }
-            localStorage.setItem('user', JSON.stringify(data));
-            location.reload();
-          })
-          .catch(() => alert('ユーザー作成に失敗しました'));
+      authLink.textContent = 'ログイン / アカウント作成';
+      authLink.onclick = () => {
+        window.location.href = 'login.html';
       };
     }
   }
 });
+
+
 
