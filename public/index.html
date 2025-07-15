@@ -2,33 +2,35 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Re:R-Tube</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Re:R-tube</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Re:R-Tube</h1>
+    <h1 id="homeLink">Re:R-tube</h1>
+    <nav>
+      <button id="uploadLink">アップロード</button>
+      <button id="channelLink">チャンネル設定</button>
+    </nav>
   </header>
 
   <main>
-    <section class="upload-section">
+    <!-- アップロードフォーム -->
+    <section id="uploadSection" class="hidden">
       <h2>動画をアップロード</h2>
-      <input type="file" id="videoFile" accept="video/*" />
-      <input type="text" id="titleInput" placeholder="タイトルを入力" />
-      <textarea id="descInput" placeholder="説明を入力"></textarea>
-      <button id="submitBtn">動画を投稿</button>
+      <input type="file" id="videoFile" accept="video/*">
+      <input type="text" id="titleInput" placeholder="タイトル">
+      <textarea id="descInput" placeholder="説明"></textarea>
+      <button id="submitBtn">アップロード</button>
     </section>
 
-    <section class="video-list">
-      <h2>公開された動画</h2>
-      <div class="grid" id="videoGrid"></div>
+    <!-- 動画一覧 -->
+    <section id="videoList">
+      <h2>動画一覧</h2>
+      <div id="videoGrid" class="grid"></div>
     </section>
   </main>
-
-  <footer>
-    <p>© 2025 謎の会社（仮）</p>
-  </footer>
 
   <script src="script.js"></script>
 </body>
