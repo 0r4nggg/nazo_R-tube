@@ -11,7 +11,7 @@
     <h1 id="homeLink">Re:R-tube</h1>
     <nav>
       <button id="uploadLink">アップロード</button>
-      <button id="authLink">チャンネル設定</button>
+      <button id="authLink">ログイン / アカウント作成</button>
     </nav>
   </header>
 
@@ -25,12 +25,22 @@
       <button id="submitBtn">アップロード</button>
     </section>
 
+    <!-- ユーザー登録フォーム（アイコンアップロード対応） -->
+    <section id="createUserSection" class="hidden">
+      <h2>アカウント作成</h2>
+      <input type="text" id="usernameInput" placeholder="ユーザー名">
+      <input type="text" id="channelNameInput" placeholder="チャンネル名">
+      <input type="file" id="iconInput" accept="image/*">
+      <button id="createUserBtn">作成</button>
+    </section>
+
     <!-- 動画一覧 -->
     <section id="videoList">
       <h2>動画一覧</h2>
       <div id="videoGrid" class="grid"></div>
     </section>
   </main>
+
   <script src="script.js"></script>
 </body>
 </html>
