@@ -17,9 +17,16 @@ app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
 // MongoDB接続
-mongoose.connect(process.env.MONGO_URI);
- .then(() => console.log('MongoDB connected'))
- .catch(err => console.error('MongoDB connection error:', err));
+async function start() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('MongoDB connected');
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+  }
+}
+start();;
 
 // スキーマ定義
 const UserSchema = new mongoose.Schema({
@@ -173,12 +180,12 @@ app.put('/api/comment/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// コメント削除APIまで追加された後...
+
 app.delete('/api/comment/:id', async (req, res) => {
   const comment = await Comment.findById(req.params.id);
   if (comment.userId.toString() !== req.body.userId) return res.status(403).json({ error: '削除権限なし' });
   await comment.deleteOne();
   res.json({ success: true });
 });
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
