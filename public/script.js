@@ -83,20 +83,26 @@ uploadForm.onsubmit = async e => {
 loadVideos();
 
 document.addEventListener('DOMContentLoaded', () => {
-  const channelBtn = document.getElementById('channelBtn');
+  const channelLink = document.getElementById('channelLink'); // ボタンIDはchannelLink
   const userData = JSON.parse(localStorage.getItem('user'));
+  const loggedIn = !!userData;
 
-  if (channelBtn) {
+  if (channelLink) {
     if (loggedIn) {
-      document.getElementById('channelLink').textContent = 'チャンネル設定';
+      channelLink.textContent = 'チャンネル設定';
+      channelLink.onclick = () => {
+        // チャンネル設定ページへ
+        window.location.href = 'channel.html';
+      };
     } else {
-      document.getElementById('channelLink').textContent = 'ログイン / アカウント作成';
-}      channelBtn.onclick = () => {
+      channelLink.textContent = 'ログイン / アカウント作成';
+      channelLink.onclick = () => {
+        // ユーザー作成ダイアログなど
         const name = prompt('ユーザー名を入力してください');
         const channel = prompt('チャンネル名を入力してください');
         const icon = prompt('アイコン画像のURLを入力（任意）');
 
-        if (!name || !channel) return alert('すべて入力してください');
+        if (!name || !channel) return alert('ユーザー名とチャンネル名は必須です');
 
         fetch('/api/create-user', {
           method: 'POST',
@@ -112,8 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (data.error) return alert(data.error);
           localStorage.setItem('user', JSON.stringify(data));
           location.reload();
-        });
+        })
+        .catch(() => alert('ユーザー作成に失敗しました'));
       };
     }
   }
 });
+
