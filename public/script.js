@@ -46,22 +46,95 @@ document.addEventListener('DOMContentLoaded', () => {
     const videos = await res.json();
 
     videoGrid.innerHTML = '';
-    videos.forEach(video => {
-      const container = document.createElement('div');
-      container.className = 'video-container';
 
-      const vid = document.createElement('video');
-      vid.src = video.url;
-      vid.controls = true;
+videos.forEach(video => {
+  const container = document.createElement('div');
+  container.className = 'video-container';
 
-      const info = document.createElement('div');
-      info.className = 'video-info';
-      info.innerHTML = `<strong>${video.title}</strong><br>${video.description}<br>投稿者: ${video.channelName}<br>再生数: ${video.viewCount}`;
+  const vid = document.createElement('video');
+  vid.src = video.url;
+  vid.controls = true;
 
-      container.append(vid, info);
-      videoGrid.append(container);
+  const info = document.createElement('div');
+  info.className = 'video-info';
+  info.innerHTML = `
+    <strong>${video.title}</strong><br>
+    ${video.description}<br>
+    投稿者: ${video.channelName}<br>
+    再生数: ${video.viewCount}
+  `;
+
+  const commentBox = document.createElement('div');
+  commentBox.className = 'comment-section';
+  const commentForm = document.createElement('form');
+  const commentInput = document.createElement('input');
+  commentInput.placeholder = 'コメントを入力...';
+  const commentBtn = document.createElement('button');
+  commentBtn.textContent = '投稿';
+  commentForm.append(commentInput, commentBtn);
+  commentForm.onsubmit = async e => {
+    e.preventDefault();
+    await fetch(`/api/comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: userData._id, videoId: video._id, content: commentInput.value })
+    });
+    loadVideos();
+  };
+  commentBox.append(commentForm);
+
+  // コメント表示
+  if (video.comments) {
+    video.comments.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      div.innerHTML = `<p>${c.username}: ${c.content}</p>`;
+      if (c.userId === userData?._id) {
+        const del = document.createElement('span');
+        del.textContent = '削除';
+        del.className = 'comment-actions';
+        del.onclick = async () => {
+          await fetch(`/api/comment/${c._id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userData._id })
+          });
+          loadVideos();
+        };
+        div.append(del);
+      }
+      commentBox.append(div);
     });
   }
+
+  // 削除ボタン（ログインユーザーが投稿者の場合のみ表示）
+  if (userData && video.userId === userData._id) {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '削除';
+    deleteBtn.className = 'delete-button';
+    deleteBtn.onclick = async () => {
+      const confirmed = confirm('この動画を本当に削除しますか？');
+      if (!confirmed) return;
+
+      const res = await fetch(`/api/video/${video._id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userData._id })
+      });
+
+      if (res.ok) {
+        alert('削除しました');
+        loadVideos();
+      } else {
+        alert('削除に失敗しました');
+      }
+    };
+    container.appendChild(deleteBtn);
+  }
+
+  container.append(vid, info, commentBox);
+  videoGrid.append(container);
+});
 
   loadVideos();
 

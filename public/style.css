@@ -141,3 +141,13 @@ button.danger {
     font-size: 0.8rem;
   }
 }
+
+.delete-button {
+  margin-top: 0.5rem;
+  background: #e53935;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+}

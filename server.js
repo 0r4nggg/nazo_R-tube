@@ -1,12 +1,11 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
-const multer = require('multer');
 const mongoose = require('mongoose');
-const path = require('path');
-const fs = require('fs');
+const multer = require('multer');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { Cloudinary } = require('cloudinary').v2;
+const cloudinary = require('cloudinary').v2;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,19 +13,24 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+
+// Cloudinary設定
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary動画削除関数
+function extractCloudinaryPublicId(url) {
+  const match = url.match(/\/upload\/(?:v\d+\/)?([^\.\/]+)\./);
+  return match ? match[1] : null;
+}
 
 // MongoDB接続
-async function start() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB connected');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-  }
-}
-start();;
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // スキーマ定義
 const UserSchema = new mongoose.Schema({
@@ -39,7 +43,7 @@ const UserSchema = new mongoose.Schema({
 const VideoSchema = new mongoose.Schema({
   title: String,
   description: String,
-  filename: String,
+  url: String,
   date: String,
   viewCount: Number,
   userId: mongoose.Schema.Types.ObjectId
@@ -56,19 +60,14 @@ const User = mongoose.model('User', UserSchema);
 const Video = mongoose.model('Video', VideoSchema);
 const Comment = mongoose.model('Comment', CommentSchema);
 
-// アップロード設定
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });
-
 // IP取得
 function getClientIp(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',').shift().trim() || req.socket.remoteAddress;
+  return (req.headers['x-forwarded-for'] || '').split(',')[0] || req.socket.remoteAddress;
 }
+
+// メモリに一時保存（Cloudinaryに送信するだけなので十分）
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // アカウント作成
 app.post('/api/create-user', async (req, res) => {
@@ -100,20 +99,43 @@ app.delete('/api/user/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// 動画アップロード
+// 動画アップロード（Cloudinary経由）
 app.post('/api/upload-video', upload.single('video'), async (req, res) => {
   const { title, description, userId } = req.body;
-  const date = new Date().toLocaleString('ja-JP');
-  const video = new Video({
-    title,
-    description,
-    filename: req.file.filename,
-    date,
-    viewCount: 0,
-    userId
-  });
-  await video.save();
-  res.json({ videoId: video._id });
+  if (!req.file) return res.status(400).json({ error: '動画がありません' });
+
+  try {
+    const uploadResult = await cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'video',
+        folder: 'nazo_r_tube_videos'
+      },
+      async (error, result) => {
+        if (error) return res.status(500).json({ error: 'Cloudinaryアップロード失敗' });
+
+        const video = new Video({
+          title,
+          description,
+          url: result.secure_url,
+          date: new Date().toLocaleString('ja-JP'),
+          viewCount: 0,
+          userId
+        });
+
+        await video.save();
+        res.json({ videoId: video._id });
+      }
+    );
+
+    // streamに書き込む
+    const stream = require('stream');
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(req.file.buffer);
+    bufferStream.pipe(uploadResult);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: '動画アップロード失敗' });
+  }
 });
 
 // 動画取得
@@ -123,7 +145,6 @@ app.get('/api/videos', async (req, res) => {
     const user = await User.findById(v.userId);
     return {
       ...v.toObject(),
-      url: '/uploads/' + v.filename,
       channelName: user?.channelName || '不明',
       iconUrl: user?.iconUrl || ''
     };
@@ -141,16 +162,38 @@ app.post('/api/increment-viewcount/:id', async (req, res) => {
 });
 
 // 動画削除
+// Cloudinaryのpublic_id抽出関数（ファイル上部に置いてもOK）
+function extractCloudinaryPublicId(url) {
+  const match = url.match(/\/upload\/(?:v\d+\/)?([^\.\/]+)\./);
+  return match ? match[1] : null;
+}
+
 app.delete('/api/video/:id', async (req, res) => {
   const { userId } = req.body;
   const video = await Video.findById(req.params.id);
-  if (!video || video.userId.toString() !== userId) return res.status(403).json({ error: '削除権限がありません' });
-  await Comment.deleteMany({ videoId: req.params.id });
-  await video.deleteOne();
-  res.json({ success: true });
+  if (!video || video.userId.toString() !== userId) {
+    return res.status(403).json({ error: '削除権限がありません' });
+  }
+
+  try {
+    // Cloudinaryから動画を削除
+    const publicId = extractCloudinaryPublicId(video.url);
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    }
+
+    // コメントと動画データを削除
+    await Comment.deleteMany({ videoId: req.params.id });
+    await video.deleteOne();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('動画削除エラー:', err);
+    res.status(500).json({ error: '削除に失敗しました' });
+  }
 });
 
-// コメント
+// コメント投稿・取得・編集・削除
 app.post('/api/comment', async (req, res) => {
   const { videoId, userId, content } = req.body;
   const date = new Date().toLocaleString('ja-JP');
@@ -180,8 +223,6 @@ app.put('/api/comment/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// コメント削除APIまで追加された後...
-
 app.delete('/api/comment/:id', async (req, res) => {
   const comment = await Comment.findById(req.params.id);
   if (comment.userId.toString() !== req.body.userId) return res.status(403).json({ error: '削除権限なし' });
@@ -189,3 +230,4 @@ app.delete('/api/comment/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
