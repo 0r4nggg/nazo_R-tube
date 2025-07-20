@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const loggedIn = !!userData && !!token;
+  console.log("ログイン状態:", loggedIn);
 
   // 認証リンク表示切り替え
   if (authLink) {
@@ -35,29 +36,79 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // アップロード表示切り替え
+  // アップロードリンクの表示切り替え
   if (uploadLink) {
     uploadLink.onclick = () => {
       if (!loggedIn) {
-        alert('動画のアップロードにはログインが必要です。');
+        alert("動画をアップロードするにはログインが必要です。");
         return;
       }
       uploadSection.classList.toggle('hidden');
     };
   }
 
-  // アップロード処理
+  // 動画一覧の読み込み
+  async function loadVideos() {
+    const res = await fetch('/api/videos');
+    const videos = await res.json();
+
+    videoGrid.innerHTML = '';
+    videos.forEach(video => {
+      const container = document.createElement('div');
+      container.className = 'video-container';
+
+      const vid = document.createElement('video');
+      vid.src = video.url;
+      vid.controls = true;
+
+      const info = document.createElement('div');
+      info.className = 'video-info';
+      info.innerHTML = `<strong>${video.title}</strong><br>${video.description}<br>投稿者: ${video.channelName}<br>再生数: ${video.viewCount}`;
+
+      container.append(vid, info);
+
+      // 自分の動画なら削除ボタンを表示
+      if (loggedIn && userData._id === video.userId) {
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '削除';
+        delBtn.onclick = async () => {
+          const confirmDel = confirm('本当に削除しますか？');
+          if (!confirmDel) return;
+
+          const res = await fetch(`/api/video/${video._id}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (res.ok) {
+            alert('削除しました');
+            loadVideos();
+          } else {
+            alert('削除に失敗しました');
+          }
+        };
+        container.appendChild(delBtn);
+      }
+
+      videoGrid.append(container);
+    });
+  }
+
+  // 動画アップロード処理
   if (submitBtn) {
     submitBtn.onclick = async () => {
-      const videoFile = document.getElementById('videoFile').files[0];
-      const title = document.getElementById('titleInput').value.trim();
-      const description = document.getElementById('descInput').value.trim();
+      const file = document.getElementById('videoFile').files[0];
+      const title = document.getElementById('titleInput').value;
+      const description = document.getElementById('descInput').value;
 
-      if (!loggedIn) return alert('ログインしてください');
-      if (!videoFile || !title) return alert('必要項目を入力してください');
+      if (!file || !title) {
+        return alert('動画ファイルとタイトルは必須です');
+      }
 
       const formData = new FormData();
-      formData.append('video', videoFile);
+      formData.append('video', file);
       formData.append('title', title);
       formData.append('description', description);
 
@@ -70,75 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (res.ok) {
-        alert('アップロード成功！');
-        document.getElementById('videoFile').value = '';
-        document.getElementById('titleInput').value = '';
-        document.getElementById('descInput').value = '';
+        alert('アップロード成功');
         uploadSection.classList.add('hidden');
         loadVideos();
       } else {
         alert('アップロード失敗');
       }
     };
-  }
-
-  // 動画一覧読み込み
-  async function loadVideos() {
-    const res = await fetch('/api/videos');
-    const videos = await res.json();
-
-    videoGrid.innerHTML = '';
-
-    videos.forEach(video => {
-      const container = document.createElement('div');
-      container.className = 'video-container';
-
-      const vid = document.createElement('video');
-      vid.src = video.url;
-      vid.controls = true;
-
-      const info = document.createElement('div');
-      info.className = 'video-info';
-      info.innerHTML = `
-        <strong>${video.title}</strong><br>
-        ${video.description}<br>
-        投稿者: ${video.channelName}<br>
-        再生数: ${video.viewCount}
-      `;
-
-      const commentBox = document.createElement('div');
-      commentBox.className = 'comment-section';
-
-      // 削除ボタン（自分の投稿のみ表示）
-      if (loggedIn && userData._id === video.userId) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '削除';
-        deleteBtn.className = 'delete-button';
-        deleteBtn.onclick = async () => {
-          const confirmed = confirm('本当に削除しますか？');
-          if (!confirmed) return;
-
-          const res = await fetch(`/api/video/${video._id}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            }
-          });
-
-          if (res.ok) {
-            alert('削除しました');
-            loadVideos();
-          } else {
-            alert('削除に失敗しました');
-          }
-        };
-        container.appendChild(deleteBtn);
-      }
-
-      container.append(vid, info, commentBox);
-      videoGrid.append(container);
-    });
   }
 
   loadVideos();
